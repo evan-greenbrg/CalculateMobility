@@ -4,7 +4,7 @@ import os
 
 def get_paths(poly, root, river):
     # Get the rivers
-    fps = glob.glob(os.path.join(root, river, 'mask', '*'))
+    fps = glob.glob(os.path.join(root, river, 'mask', '*.tif'))
     blocks = {}
     for fp in fps:
         block = fp.split('_')[-1].split('.')[0]
