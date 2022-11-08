@@ -9,10 +9,15 @@ def create_mask_shape(polygon_path, river, fps):
     polygon_name = polygon_path.split('/')[-1].split('.')[0]
     with fiona.open(polygon_path, layer=polygon_name) as layer:
         for feature in layer:
-            geom = feature['geometry']
-
             image = fps[0]
             ds = rasterio.open(image)
+
+            geom = rasterio.warp.transform_geom(
+                src_crs=layer.crs,
+                dst_crs=ds.crs,
+                geom=feature['geometry'],
+            )
+
             out_image, out_transform = mask(
                 ds, [geom],
                 crop=False, filled=False

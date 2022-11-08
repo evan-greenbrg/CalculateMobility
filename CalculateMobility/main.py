@@ -25,14 +25,18 @@ if __name__ == '__main__':
     parser.add_argument('--river', metavar='r', type=str,
                         help='River name')
 
+    parser.add_argument('--scale', metavar='s', type=float,
+                        help='Mask resolution')
+
     args = parser.parse_args()
 
     export_images = False
     paths = get_paths(args.poly, args.out, args.river)
 
     print('Pulling Mobility')
-    rivers = get_mobility_rivers(args.poly, paths, args.out, args.river)
+    rivers = get_mobility_rivers(args.poly, paths, args.out, args.river, args.scale)
 
     if (args.gif == 'true'):
         print('Making Gif')
         make_gifs(args.river, args.out)
+
