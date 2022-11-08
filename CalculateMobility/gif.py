@@ -15,14 +15,27 @@ from scipy.optimize import curve_fit
 def func_3_param(x, a, m, p):
     return ((a - p) * np.exp(-m * x)) + p
 
+def func_r_param(x, r, p):
+    return (-p * np.exp(-r * x)) + p
 
-def func_2_param(x, a, m, p):
-    return (a * np.exp(m * x)) - a
+def func_m_param(x, m, p, aw):
+    return ((aw - p) * np.exp(-m * x)) + p
+
+def m_wrapper(aw):
+    def tempfunc(x, m, p, aw=aw):
+        return func_m_param(x, m, p, aw)
+    return tempfunc
+
+def func_2_param(x, m, p):
+    return (p * np.exp(-m * x)) + p
 
 
-def fit_curve(x, y, fun):
+def fit_curve(x, y, fun, p0):
     # Fitting
-    popt, pcov = curve_fit(fun, x, y, p0=[1, 1, 1], maxfev=1000000)
+    popt, pcov = curve_fit(
+        fun, x, y, 
+        p0=p0, maxfev=1000000
+    )
     # R-squared
     residuals = y - fun(x, *popt)
     ss_res = np.sum(residuals**2)
@@ -90,41 +103,86 @@ def make_gif(fps, fp_in, fp_out, stat_out):
         combos.append(combo)
 
     # Make avg_df
-    avg_df = full_df.groupby('x').median().reset_index(drop=False).iloc[:20]
+    avg_df = full_df.groupby('x').median().reset_index(drop=False).iloc[:25]
     avg_df = avg_df.dropna(how='any')
 
     # make max and min dfs
-    max_df = full_df.groupby('x').quantile(0.85).reset_index(drop=False).iloc[:20]
+    max_df = full_df.groupby('x').quantile(0.85).reset_index(drop=False).iloc[:25]
     max_df = max_df.dropna(how='any')
 
-    min_df = full_df.groupby('x').quantile(0.15).reset_index(drop=False).iloc[:20]
+    min_df = full_df.groupby('x').quantile(0.15).reset_index(drop=False).iloc[:25]
     min_df = min_df.dropna(how='any')
 
-    am_3, m_3, pm_3, o_r2_3 = fit_curve(
+    aw = max_df['w_b'].mean()
+    m_avg, pm_avg, m_r2_avg = fit_curve(
         max_df['x'],
-        max_df['O_Phi'].to_numpy(),
-        func_3_param
+        max_df['O_avg'].to_numpy(),
+        m_wrapper(aw),
+        [1, 1]
     )
 
-    ar_3, r_3, pr_3, f_r2_3 = fit_curve(
+    m_wd, pm_wd, m_r2_wd = fit_curve(
+        max_df['x'],
+        max_df['O_wd'].to_numpy(),
+        m_wrapper(aw),
+        [1, 1]
+    )
+
+    m_dw, pm_dw, m_r2_dw = fit_curve(
+        max_df['x'],
+        max_df['O_dw'].to_numpy(),
+        m_wrapper(aw),
+        [1, 1]
+    )
+
+    r, pr, f_r2 = fit_curve(
         min_df['x'],
         min_df['fR'].to_numpy(),
-        func_3_param
+        func_r_param,
+        [.001, 1]
     )
+
+    am_wick, cm_wick, pm_wick, m_r2_wick = fit_curve(
+        max_df['i'],
+        max_df['O_wick'].to_numpy(),
+        func_3_param,
+        [1, .01, 1]
+    )
+
+    ar_wick, cr_wick, pr_wick, r_r2_wick = fit_curve(
+        max_df['i'],
+        (1 - max_df['fR_wick']).to_numpy(),
+        func_3_param,
+        [1, .01, 1]
+    )
+
+    # Get average w_b
+    w_b = avg_df['w_b'].median()
+    w_b_max = max_df['w_b'].median()
 
     stats = pandas.DataFrame(data={
         'Type': ['Value', 'Rsquared'],
-        'M_3': [round(m_3, 8), round(o_r2_3, 8)],
-        'AM_3': [round(am_3, 8), None],
-        'PM_3': [round(pm_3, 8), None],
-        'R_3': [round(r_3, 8), round(f_r2_3, 8)],
-        'AR_3': [round(ar_3, 8), None],
-        'PR_3': [round(pr_3, 8), None],
+        'CM_avg': [round(m_avg, 8), round(m_r2_avg, 8)],
+        'PM_avg': [round(pm_avg, 8), None],
+        'CM_wd': [round(m_wd, 8), round(m_r2_wd, 8)],
+        'PM_wd': [round(pm_wd, 8), None],
+        'CM_dw': [round(m_dw, 8), round(m_r2_dw, 8)],
+        'PM_dw': [round(pm_dw, 8), None],
+        'CR': [round(r, 8), round(f_r2, 8)],
+        'PR': [round(pr, 8), None],
+        'Aw': [round(w_b, 8), None],
+        'Aw_max': [round(w_b_max, 8), None],
+        'CM_wick': [round(cm_wick, 8), round(m_r2_wick, 8)],
+        'AM_wick': [round(am_wick, 8), None],
+        'PM_wick': [round(pm_wick, 8), None],
+        'CR_wick': [round(cr_wick, 8), round(r_r2_wick, 8)],
+        'AR_wick': [round(ar_wick, 8), None],
+        'PR_wick': [round(pr_wick, 8), None],
     })
     stats.to_csv(stat_out)
 
-    o_pred_3 = func_3_param(avg_df['x'], am_3, m_3, pm_3)
-    f_pred_3 = func_3_param(avg_df['x'], ar_3, r_3, pr_3)
+    m_pred = func_m_param(avg_df['x'], m_avg, pm_avg, aw)
+    r_pred = func_r_param(avg_df['x'], r, pr)
 
     # METHOD 2
     images = []
@@ -138,6 +196,7 @@ def make_gif(fps, fp_in, fp_out, stat_out):
         year = list(years.keys())[i]
         if i < len(avg_df):
             data = avg_df.iloc[i]
+
         img_buf = io.BytesIO()
 
         fig = plt.figure(constrained_layout=True, figsize=(10, 7))
@@ -164,7 +223,7 @@ def make_gif(fps, fp_in, fp_out, stat_out):
 
         ax2.plot(
             min_df['x'],
-            f_pred_3,
+            r_pred,
             zorder=5,
             color='green',
             label='3 Parameter'
@@ -177,13 +236,6 @@ def make_gif(fps, fp_in, fp_out, stat_out):
             facecolor='black',
             edgecolor='black'
         )
-#        ax2.plot(
-#            avg_df['x'],
-#            avg_df['fR'],
-#            zorder=4,
-#            color='black',
-#            label='average'
-#        )
         ax2.scatter(
             full_df['x'],
             full_df['fR'],
@@ -208,36 +260,29 @@ def make_gif(fps, fp_in, fp_out, stat_out):
 
         ax3.plot(
             max_df['x'],
-            o_pred_3,
+            m_pred,
             zorder=5,
             color='blue'
         )
         ax3.scatter(
             max_df['x'],
-            max_df['O_Phi'],
+            max_df['O_avg'],
             zorder=4,
             s=70,
             facecolor='black',
             edgecolor='black'
         )
-#        ax3.plot(
-#            avg_df['x'],
-#            avg_df['O_Phi'],
-#            zorder=4,
-#            color='black',
-#            label='average'
-#        )
         ax3.scatter(
             full_df['x'],
-            full_df['O_Phi'],
+            full_df['O_avg'],
             zorder=2,
-            s=50,
+            s=25,
             facecolor='white',
             edgecolor='black'
         )
-        ax3.scatter(data['x'], data['O_Phi'], s=200, zorder=3, color='red')
+        ax3.scatter(data['x'], data['O_avg'], s=200, zorder=3, color='red')
         ax3.set_ylabel('Normalized Channel Overlap')
-        ax3.set_ylim([0, 1])
+        # ax3.set_ylim([0, 1])
 
         plt.savefig(img_buf, format='png')
         images.append(Image.open(img_buf))
@@ -264,11 +309,12 @@ def make_gif(fps, fp_in, fp_out, stat_out):
 def make_gifs(river, root):
     print(river)
     fps = sorted(
-        glob.glob(os.path.join(root, f'{river}/*mobility_block*.csv'))
+        glob.glob(os.path.join(root, f'{river}/*mobility_block_0.csv'))
     )
     fp_in = os.path.join(
-        root, f'{river}/mask/*_mask.tif'
+        root, f'{river}/mask/*_mask*.tif'
     )
+
     fp_out = os.path.join(
         root, f'{river}/{river}_cumulative.gif'
     )
@@ -276,3 +322,4 @@ def make_gifs(river, root):
         root, f'{river}/{river}_mobility_stats.csv'
     )
     make_gif(fps, fp_in, fp_out, stat_out)
+

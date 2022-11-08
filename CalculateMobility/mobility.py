@@ -6,7 +6,7 @@ from mobility_helpers import clean
 from mobility_helpers import create_mask_shape
 
 
-def get_mobility_rivers(poly, paths, out, river):
+def get_mobility_rivers(poly, paths, out, river, scale):
     print(river)
     for block, path_list in enumerate(paths):
         path_list = sorted(path_list)
@@ -26,6 +26,7 @@ def get_mobility_rivers(poly, paths, out, river):
         river_dfs = get_mobility_yearly(
             images,
             mask,
+            scale
         )
 
         full_df = pandas.DataFrame()
@@ -49,9 +50,10 @@ def get_mobility_rivers(poly, paths, out, river):
     return river
 
 
-def get_mobility_yearly(images, mask):
+def get_mobility_yearly(images, mask, scale=30):
 
     A = len(np.where(mask == 1)[1])
+
     year_range = list(images.keys())
     ranges = [year_range[i:] for i, yr in enumerate(year_range)]
     river_dfs = {}
@@ -59,13 +61,13 @@ def get_mobility_yearly(images, mask):
         data = {
             'year': [],
             'i': [],
-            'D': [],
-            'D/A': [],
-            'Phi': [],
-            'O_Phi': [],
+            'O_avg': [],
+            'O_wd': [],
+            'O_dw': [],
+            'O_wick': [],
             'fR': [],
-            'fw_b': [],
-            'fd_b': [],
+            'fR_wick': [],
+            'w_b': [],
         }
         length = images[yrange[0]].shape[0]
         width = images[yrange[0]].shape[1]
@@ -75,12 +77,11 @@ def get_mobility_yearly(images, mask):
         for j, year in enumerate(yrange):
             years.append(year)
             im = images[str(year)].astype(int)
-            im[mask.mask] = 0
-#            im[where] = 0
+            filt = np.where(~np.array(mask) + 2)
+            im[filt] = 0
             all_images[:, :, j] = im
 
         baseline = all_images[:, :, 0]
-
         w_b = len(np.where(baseline == 1)[0])
         fb = mask - baseline
         fw_b = w_b / A
@@ -96,33 +97,37 @@ def get_mobility_yearly(images, mask):
             )
             kb[np.where(kb != 1)] = 0
             Nb = np.sum(kb)
-#            fR = 1 - (Nb / (A * fd_b))
-            fR = (Na / w_b) - (Nb / w_b)
+            # fR = (Na / w_b) - (Nb / w_b)
+            fR = (Na - Nb)
+            fR_wick = 1 - (Nb / Na)
 
             # Calculate D - EQ. (1)
-            D = np.sum(np.abs(np.subtract(baseline, im)))
-
-            # Calculate D / A
-            D_A = D / A
+            D = np.subtract(baseline, im)
+            # 1 - wet -> dry
+            d_wd = len((np.where(D == 1))[0])
+            # -1 - dry -> wet
+            d_dw = len((np.where(D == -1))[0])
 
             # Calculate Phi
             w_t = len(np.where(im == 1)[0])
             fw_t = w_t / A
             fd_t = (A - w_t) / A
 
-            PHI = (fw_b * fd_t) + (fd_b * fw_t)
-
             # Calculate O_Phi
-            O_PHI = 1 - (D / (A * PHI))
+            PHI = (fw_b * fd_t) + (fd_b * fw_t)
+            o_wick = 1 - (np.sum(np.abs(D)) / (A * PHI))
+            o_avg = w_b - np.mean([d_wd, d_dw])
+            o_wd = w_b - d_wd
+            o_dw = w_b - d_dw
 
             data['i'].append(j)
-            data['D'].append(D)
-            data['D/A'].append(D_A)
-            data['Phi'].append(PHI)
-            data['O_Phi'].append(O_PHI)
-            data['fR'].append(fR)
-            data['fw_b'].append(fw_b)
-            data['fd_b'].append(fd_b)
+            data['O_avg'].append(o_avg * scale)
+            data['O_wd'].append(o_wd * scale)
+            data['O_dw'].append(o_dw * scale)
+            data['O_wick'].append(o_wick)
+            data['fR'].append(fR * scale)
+            data['fR_wick'].append(fR_wick)
+            data['w_b'].append(w_b * scale)
 
         data['year'] = years
         river_dfs[yrange[0]] = pandas.DataFrame(data=data)
