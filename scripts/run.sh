@@ -1,9 +1,8 @@
 #!/bin/bash
-
-river='Width5'
-poly="/Users/greenberg/Documents/PHD/Projects/Mobility/MethodsPaper/SensitivityTest/BermejoWidths/$river.gpkg"
+river='PearlUpstream'
+poly="/home/greenberg/ExtraSpace/PhD/Projects/Mobility/Dams/River_Shapes/$river.gpkg"
 gif="true"
-out="/Volumes/Samsung_T5/Mac/PhD/Projects/Mobility/MethodsPaper/RiverData/BermajoWidths"
+out="/home/greenberg/ExtraSpace/PhD/Projects/Mobility/Dams/River_Files"
 scale=30
 
 python ../CalculateMobility/main.py --poly $poly --gif $gif --out $out --river $river --scale $scale
