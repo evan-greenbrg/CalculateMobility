@@ -68,6 +68,7 @@ def get_mobility_yearly(images, mask, scale=30):
             'fR': [],
             'fR_wick': [],
             'w_b': [],
+            'd_b': [],
         }
         length = images[yrange[0]].shape[0]
         width = images[yrange[0]].shape[1]
@@ -128,6 +129,7 @@ def get_mobility_yearly(images, mask, scale=30):
             data['fR'].append(fR * scale)
             data['fR_wick'].append(fR_wick)
             data['w_b'].append(w_b * scale)
+            data['d_b'].append(Na * scale)
 
         data['year'] = years
         river_dfs[yrange[0]] = pandas.DataFrame(data=data)
