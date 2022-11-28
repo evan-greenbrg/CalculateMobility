@@ -45,7 +45,234 @@ def fit_curve(x, y, fun, p0):
     return (*popt), r_squared
 
 
-def make_gif(fps, fp_in, fp_out, stat_out):
+def get_stats(fps, stat_out):
+    # Handle mobility dataframes
+    if not fps:
+        print(f'Number of files found: {len(fps)}')
+        raise ValueError('No files found')
+
+    full_dfs = [pandas.read_csv(fp) for fp in fps]
+    full_dfs_clean = []
+    for full_df in full_dfs:
+        full_df_clean = pandas.DataFrame()
+        for group, df in full_df.groupby('range'):
+            df['x'] = df['year'] - df.iloc[0]['year']
+            full_df_clean = full_df_clean.append(df)
+        full_dfs_clean.append(full_df_clean)
+
+    # Stack all blocks
+    full_df = pandas.DataFrame()
+    for df in full_dfs_clean:
+        full_df = full_df.append(df)
+
+    # Make avg_df
+    df50 = full_df.groupby('x').quantile(0.5).reset_index(drop=False).iloc[:28]
+    df50 = df50.dropna(how='any')
+
+    df75 = full_df.groupby('x').quantile(0.75).reset_index(drop=False).iloc[:28]
+    df75 = df75.dropna(how='any')
+
+    df25 = full_df.groupby('x').quantile(0.25).reset_index(drop=False).iloc[:28]
+    df25 = df25.dropna(how='any')
+
+    # OAvg
+    aw25 = df25['w_b'].mean()
+    m25, pm25, m25_r2 = fit_curve(
+        df25['x'],
+        df25['O_avg'].to_numpy(),
+        m_wrapper(aw25),
+        [.01, 1]
+    )
+
+    aw50 = df50['w_b'].mean()
+    m50, pm50, m50_r2 = fit_curve(
+        df50['x'],
+        df50['O_avg'].to_numpy(),
+        m_wrapper(aw50),
+        [.01, 1]
+    )
+
+    aw75 = df75['w_b'].mean()
+    m75, pm75, m75_r2 = fit_curve(
+        df75['x'],
+        df75['O_avg'].to_numpy(),
+        m_wrapper(aw75),
+        [.01, 1]
+    )
+
+    # Owet-dry
+    m25wd, pm25wd, m25wd_r2 = fit_curve(
+        df25['x'],
+        df25['O_wd'].to_numpy(),
+        m_wrapper(aw25),
+        [.01, 1]
+    )
+
+    m50wd, pm50wd, m50wd_r2 = fit_curve(
+        df50['x'],
+        df50['O_wd'].to_numpy(),
+        m_wrapper(aw50),
+        [.01, 1]
+    )
+
+    m75wd, pm75wd, m75wd_r2 = fit_curve(
+        df75['x'],
+        df75['O_wd'].to_numpy(),
+        m_wrapper(aw75),
+        [.01, 1]
+    )
+
+    # Odry-wed
+    m25dw, pm25dw, m25dw_r2 = fit_curve(
+        df25['x'],
+        df25['O_dw'].to_numpy(),
+        m_wrapper(aw25),
+        [.01, 1]
+    )
+
+    m50dw, pm50dw, m50dw_r2 = fit_curve(
+        df50['x'],
+        df50['O_dw'].to_numpy(),
+        m_wrapper(aw50),
+        [.01, 1]
+    )
+
+    m75dw, pm75dw, m75dw_r2 = fit_curve(
+        df75['x'],
+        df75['O_dw'].to_numpy(),
+        m_wrapper(aw75),
+        [.01, 1]
+    )
+
+    r25, pr25, r25_r2 = fit_curve(
+        df25['x'],
+        df25['fR'].to_numpy(),
+        func_r_param,
+        [.001, 1]
+    )
+    r50, pr50, r50_r2 = fit_curve(
+        df50['x'],
+        df50['fR'].to_numpy(),
+        func_r_param,
+        [.001, 1]
+    )
+    r75, pr75, r75_r2 = fit_curve(
+        df75['x'],
+        df75['fR'].to_numpy(),
+        func_r_param,
+        [.001, 1]
+    )
+
+    stats = pandas.DataFrame(data={
+        'Type': ['Value', 'Rsquared'],
+        'Aw25': [round(aw25, 8), None],
+        'Aw50': [round(aw50, 8), None],
+        'Aw75': [round(aw75, 8), None],
+        'CM25': [round(m25, 8), round(m25_r2, 8)],
+        'PM25': [round(pm25, 8), None],
+        'CM50': [round(m50, 8), round(m50_r2, 8)],
+        'PM50': [round(pm50, 8), None],
+        'CM75': [round(m75, 8), round(m75_r2, 8)],
+        'PM75': [round(pm75, 8), None],
+        'CM25wd': [round(m25wd, 8), round(m25wd_r2, 8)],
+        'PM25wd': [round(pm25wd, 8), None],
+        'CM50wd': [round(m50wd, 8), round(m50wd_r2, 8)],
+        'PM50wd': [round(pm50wd, 8), None],
+        'CM75wd': [round(m75wd, 8), round(m75wd_r2, 8)],
+        'PM75wd': [round(pm75wd, 8), None],
+        'CM25dw': [round(m25dw, 8), round(m25dw_r2, 8)],
+        'PM25dw': [round(pm25dw, 8), None],
+        'CM50dw': [round(m50dw, 8), round(m50dw_r2, 8)],
+        'PM50dw': [round(pm50dw, 8), None],
+        'CM75dw': [round(m75dw, 8), round(m75dw_r2, 8)],
+        'PM75dw': [round(pm75dw, 8), None],
+        'CR25': [round(r25, 8), round(r25_r2, 8)],
+        'PR25': [round(pr25, 8), None],
+        'CR50': [round(r50, 8), round(r50_r2, 8)],
+        'PR50': [round(pr50, 8), None],
+        'CR75': [round(r75, 8), round(r75_r2, 8)],
+        'PR75': [round(pr75, 8), None],
+    })
+    stats.to_csv(stat_out)
+
+    return stats
+
+
+def get_mobility(stats, mobility_out):
+    """
+    HAVE THIS SPIT OUT REAL DATA
+    """
+    stats = stats.iloc[0]
+
+    M25 = stats['CM25'] * (1 - (stats['PM25'] / stats['Aw25']))
+    T_M25 = 3 / M25
+
+    M50 = stats['CM50'] * (1 - (stats['PM50'] / stats['Aw50']))
+    T_M50 = 3 / M50
+
+    M75 = stats['CM75'] * (1 - (stats['PM75'] / stats['Aw75']))
+    T_M75 = 3 / M75
+
+    M25wd = stats['CM25wd'] * (1 - (stats['PM25wd'] / stats['Aw25']))
+    T_M25wd = 3 / M25wd
+
+    M50wd = stats['CM50wd'] * (1 - (stats['PM50wd'] / stats['Aw50']))
+    T_M50wd = 3 / M50wd
+
+    M75wd = stats['CM75wd'] * (1 - (stats['PM75wd'] / stats['Aw75']))
+    T_M75wd = 3 / M75wd
+
+    M25dw = stats['CM25dw'] * (1 - (stats['PM25dw'] / stats['Aw25']))
+    T_M25dw = 3 / M25dw
+
+    M50dw = stats['CM50dw'] * (1 - (stats['PM50dw'] / stats['Aw50']))
+    T_M50dw = 3 / M50dw
+
+    M75dw = stats['CM75dw'] * (1 - (stats['PM75dw'] / stats['Aw75']))
+    T_M75dw = 3 / M75dw
+
+    R25 = stats['CR25'] * ((stats['PR25'] / stats['Aw25']))
+    T_R25 = 3 / R25
+
+    R50 = stats['CR50'] * ((stats['PR50'] / stats['Aw50']))
+    T_R50 = 3 / R50
+
+    R75 = stats['CR75'] * ((stats['PR75'] / stats['Aw75']))
+    T_R75 = 3 / R75
+
+    mobility = pandas.DataFrame(data={
+        'M25': [M25],
+        'T_M25': [T_M25],
+        'M50': [M50],
+        'T_M50': [T_M50],
+        'M75': [M75],
+        'T_M75': [T_M75],
+        'M25wd': [M25wd],
+        'T_M25wd': [T_M25wd],
+        'M50wd': [M50wd],
+        'T_M50wd': [T_M50wd],
+        'M75wd': [M75wd],
+        'T_M75wd': [T_M75wd],
+        'M25dw': [M25dw],
+        'T_M25dw': [T_M25dw],
+        'M50dw': [M50dw],
+        'T_M50dw': [T_M50dw],
+        'M75dw': [M75dw],
+        'T_M75dw': [T_M75dw],
+        'R25': [R25],
+        'T_R25': [T_R25],
+        'R50': [R50],
+        'T_R50': [T_R50],
+        'R75': [R75],
+        'T_R75': [T_R75],
+    })
+    mobility.to_csv(mobility_out)
+
+
+def make_gif(fps, fp_in, fp_out):
+    """
+    HAVE TO FIX SOME OF THE REFERENCES TO THE OLD DF
+    """
 
     # Handle mobility dataframes
     full_dfs = [pandas.read_csv(fp) for fp in fps]
@@ -62,12 +289,21 @@ def make_gif(fps, fp_in, fp_out, stat_out):
     for df in full_dfs_clean:
         full_df = full_df.append(df)
 
+    # Make avg_df
+    df50 = full_df.groupby('x').quantile(0.5).reset_index(drop=False).iloc[:]
+    df50 = df50.dropna(how='any')
+
+    df75 = full_df.groupby('x').quantile(0.75).reset_index(drop=False).iloc[:]
+    df75 = df75.dropna(how='any')
+
+    df25 = full_df.groupby('x').quantile(0.25).reset_index(drop=False).iloc[:]
+    df25 = df25.dropna(how='any')
+
     # Handle images
     imgs = [f for f in natsorted(glob.glob(fp_in))]
     years = {}
     for im in imgs:
         year = re.findall(r"[0-9]{4,7}", im)[-1]
-        print(year)
         years[str(year)] = im
 
     year_keys = list(full_df['year'].unique())
@@ -84,7 +320,6 @@ def make_gif(fps, fp_in, fp_out, stat_out):
     year_keys = list(years.keys())
     imgs = []
     agrs = []
-    combos = []
     for year, file in years.items():
         ds = rasterio.open(file).read(1)
 
@@ -94,95 +329,12 @@ def make_gif(fps, fp_in, fp_out, stat_out):
         else:
             agr += ds
 
+        agr[np.where(ds)] = 2
         ag_save = np.copy(agr)
-
-        combo = agr + image
+        agr[np.where(agr)] = 1
 
         imgs.append(image)
         agrs.append(ag_save)
-        combos.append(combo)
-
-    # Make avg_df
-    avg_df = full_df.groupby('x').median().reset_index(drop=False).iloc[:25]
-    avg_df = avg_df.dropna(how='any')
-
-    # make max and min dfs
-    max_df = full_df.groupby('x').quantile(0.85).reset_index(drop=False).iloc[:25]
-    max_df = max_df.dropna(how='any')
-
-    min_df = full_df.groupby('x').quantile(0.15).reset_index(drop=False).iloc[:25]
-    min_df = min_df.dropna(how='any')
-
-    aw = max_df['w_b'].mean()
-    m_avg, pm_avg, m_r2_avg = fit_curve(
-        max_df['x'],
-        max_df['O_avg'].to_numpy(),
-        m_wrapper(aw),
-        [1, 1]
-    )
-
-    m_wd, pm_wd, m_r2_wd = fit_curve(
-        max_df['x'],
-        max_df['O_wd'].to_numpy(),
-        m_wrapper(aw),
-        [1, 1]
-    )
-
-    m_dw, pm_dw, m_r2_dw = fit_curve(
-        max_df['x'],
-        max_df['O_dw'].to_numpy(),
-        m_wrapper(aw),
-        [1, 1]
-    )
-
-    r, pr, f_r2 = fit_curve(
-        min_df['x'],
-        min_df['fR'].to_numpy(),
-        func_r_param,
-        [.001, 1]
-    )
-
-    am_wick, cm_wick, pm_wick, m_r2_wick = fit_curve(
-        max_df['i'],
-        max_df['O_wick'].to_numpy(),
-        func_3_param,
-        [1, .01, 1]
-    )
-
-    ar_wick, cr_wick, pr_wick, r_r2_wick = fit_curve(
-        max_df['i'],
-        (1 - max_df['fR_wick']).to_numpy(),
-        func_3_param,
-        [1, .01, 1]
-    )
-
-    # Get average w_b
-    w_b = avg_df['w_b'].median()
-    w_b_max = max_df['w_b'].median()
-
-    stats = pandas.DataFrame(data={
-        'Type': ['Value', 'Rsquared'],
-        'CM_avg': [round(m_avg, 8), round(m_r2_avg, 8)],
-        'PM_avg': [round(pm_avg, 8), None],
-        'CM_wd': [round(m_wd, 8), round(m_r2_wd, 8)],
-        'PM_wd': [round(pm_wd, 8), None],
-        'CM_dw': [round(m_dw, 8), round(m_r2_dw, 8)],
-        'PM_dw': [round(pm_dw, 8), None],
-        'CR': [round(r, 8), round(f_r2, 8)],
-        'PR': [round(pr, 8), None],
-        'Aw': [round(w_b, 8), None],
-        'Aw_max': [round(w_b_max, 8), None],
-        'CM_wick': [round(cm_wick, 8), round(m_r2_wick, 8)],
-        'AM_wick': [round(am_wick, 8), None],
-        'PM_wick': [round(pm_wick, 8), None],
-        'CR_wick': [round(cr_wick, 8), round(r_r2_wick, 8)],
-        'AR_wick': [round(ar_wick, 8), None],
-        'PR_wick': [round(pr_wick, 8), None],
-    })
-    stats.to_csv(stat_out)
-
-    m_pred = func_m_param(avg_df['x'], m_avg, pm_avg, aw)
-    r_pred = func_r_param(avg_df['x'], r, pr)
 
     # METHOD 2
     images = []
@@ -191,11 +343,10 @@ def make_gif(fps, fp_in, fp_out, stat_out):
         Patch(color='#6b2e10', label='Unvisted Pixels'),
         Patch(color='#9eb4f0', label='Yearly Water'),
     ]
-    # for i, ag in enumerate(agrs):
-    for i, ag in enumerate(combos):
+    for i, ag in enumerate(agrs):
         year = list(years.keys())[i]
-        if i < len(avg_df):
-            data = avg_df.iloc[i]
+        if i < len(df50):
+            data = df50.iloc[i]
 
         img_buf = io.BytesIO()
 
@@ -221,30 +372,39 @@ def make_gif(fps, fp_in, fp_out, stat_out):
             prop={'size': 10}
         )
 
-        ax2.plot(
-            min_df['x'],
-            r_pred,
-            zorder=5,
-            color='green',
-            label='3 Parameter'
+        ax2.scatter(
+            df25['x'],
+            df25['fR'],
+            zorder=4,
+            s=50,
+            facecolor='#FFCCCB',
+            edgecolor='black'
         )
         ax2.scatter(
-            min_df['x'],
-            min_df['fR'],
+            df50['x'],
+            df50['fR'],
             zorder=4,
             s=70,
-            facecolor='black',
+            facecolor='#8B0000',
+            edgecolor='black'
+        )
+        ax2.scatter(
+            df75['x'],
+            df75['fR'],
+            zorder=4,
+            s=50,
+            facecolor='#FFCCCB',
             edgecolor='black'
         )
         ax2.scatter(
             full_df['x'],
             full_df['fR'],
             zorder=2,
-            s=50,
-            facecolor='white',
+            s=30,
+            facecolor='black',
             edgecolor='black'
         )
-        if i < len(avg_df):
+        if i < len(df50):
             ax2.scatter(
                 data['x'],
                 data['fR'],
@@ -258,31 +418,44 @@ def make_gif(fps, fp_in, fp_out, stat_out):
             frameon=True
         )
 
-        ax3.plot(
-            max_df['x'],
-            m_pred,
-            zorder=5,
-            color='blue'
+        ax3.scatter(
+            df25['x'],
+            df25['O_avg'],
+            zorder=4,
+            s=50,
+            facecolor='#FFCCCB',
+            edgecolor='black'
         )
         ax3.scatter(
-            max_df['x'],
-            max_df['O_avg'],
+            df50['x'],
+            df50['O_avg'],
             zorder=4,
             s=70,
-            facecolor='black',
+            facecolor='#8B0000',
+            edgecolor='black'
+        )
+        ax3.scatter(
+            df75['x'],
+            df75['O_avg'],
+            zorder=4,
+            s=50,
+            facecolor='#FFCCCB',
             edgecolor='black'
         )
         ax3.scatter(
             full_df['x'],
             full_df['O_avg'],
             zorder=2,
-            s=25,
-            facecolor='white',
+            s=30,
+            facecolor='black',
             edgecolor='black'
         )
-        ax3.scatter(data['x'], data['O_avg'], s=200, zorder=3, color='red')
+        ax3.scatter(
+            data['x'], 
+            data['O_avg'], 
+            s=200, zorder=3, color='red'
+        )
         ax3.set_ylabel('Normalized Channel Overlap')
-        # ax3.set_ylim([0, 1])
 
         plt.savefig(img_buf, format='png')
         images.append(Image.open(img_buf))
@@ -319,7 +492,23 @@ def make_gifs(river, root):
         root, f'{river}/{river}_cumulative.gif'
     )
     stat_out = os.path.join(
-        root, f'{river}/{river}_mobility_stats.csv'
+        root, f'{river}/{river}_pixel_values.csv'
     )
-    make_gif(fps, fp_in, fp_out, stat_out)
+    mobility_out = os.path.join(
+        root, f'{river}/{river}_mobility_metrics.csv'
+    )
+    print('Finding Stats')
+    stats = get_stats(fps, stat_out)
+    print('Calculating Mobility')
+    get_mobility(stats, mobility_out)
+    print('Making Gif')
+    make_gif(fps, fp_in, fp_out)
 
+
+if __name__ == '__main__':
+
+    river='PearlUpstream'
+    poly="/home/greenberg/ExtraSpace/PhD/Projects/Mobility/Dams/River_Shapes/$river.gpkg"
+    gif="true"
+    out="/home/greenberg/ExtraSpace/PhD/Projects/Mobility/Dams/River_Files"
+    ocale=30
