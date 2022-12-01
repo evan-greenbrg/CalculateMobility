@@ -5,11 +5,10 @@ do
     echo $value
     river=$value
     poly="/Users/greenberg/Documents/PHD/Projects/Mobility/MethodsPaper/RiverData/Meandering/shapes/$value.gpkg"
-    gif="true"
+    metrics="dswe"
     out="/Users/greenberg/Documents/PHD/Projects/Mobility/MethodsPaper/RiverData/Meandering/files"
-    scale=30
 
-    python ../CalculateMobility/main.py --poly $poly --gif $gif --out $out --river $river --scale $scale
+    python ../CalculateMobility/main.py --poly $poly --metrics $metrics --out $out --river $river --scale $scale
 
 done
 
