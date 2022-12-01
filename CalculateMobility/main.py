@@ -38,8 +38,11 @@ if __name__ == '__main__':
     rivers = get_mobility_rivers(args.poly, paths, args.river)
 
     print('Making Gif')
+    print(args.metrics)
+
     if (args.metrics == 'single'):
         dswe = False
-    elif (args.metrics== 'dswe'):
+    elif (args.metrics == 'dswe'):
         dswe = True
+
     make_gifs(args.river, args.out, dswe=dswe)

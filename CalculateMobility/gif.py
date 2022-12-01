@@ -512,9 +512,6 @@ def make_gif(fps, fp_in, fp_out, dswe=False):
 
 def make_gifs(river, root, dswe=False):
     print(river)
-    fp_in = os.path.join(
-        root, 'mask/*_mask*.tif'
-    )
 
     fp_out = os.path.join(
         root, f'{river}_cumulative.gif'
@@ -526,9 +523,12 @@ def make_gifs(river, root, dswe=False):
         root, f'{river}_mobility_metrics.csv'
     )
     if dswe:
+        fp_in = os.path.join(
+            root, 'WaterLevel2/mask/*_mask*.tif'
+        )
         fps = []
+        fp_roots = glob.glob(os.path.join(root, 'WaterLevel*'))
         for root in fp_roots:
-            print(os.path.join(root, '*yearly_mobility.csv'))
             level = root.split('/')[-1]
             fps.append(glob.glob(
                 os.path.join(root, '*yearly_mobility.csv')
@@ -536,6 +536,9 @@ def make_gifs(river, root, dswe=False):
     else:
         fps = sorted(
             glob.glob(os.path.join(root, '*yearly_mobility.csv'))
+        )
+        fp_in = os.path.join(
+            root, 'mask/*_mask*.tif'
         )
 
     print('Finding Stats')

@@ -1,7 +1,7 @@
 #!/bin/bash
-river='Araguaia'
-poly="/Users/greenberg/Documents/PHD/Projects/Mobility/MethodsPaper/RiverData/Meandering/shapes/$river.gpkg"
+river='Sabine'
+poly="/home/greenberg/ExtraSpace/PhD/Projects/Mobility/Dams/Rivers/Shapes/$river.gpkg"
 metrics="dswe"
-out="/Volumes/Samsung_T5/Mac/PhD/Projects/Mobility/MethodsPaper/RiverData/MeanderingRivers/Data/$river"
+out="/home/greenberg/ExtraSpace/PhD/Projects/Mobility/Dams/Rivers/Files/$river"
 
 python ../CalculateMobility/main.py --poly $poly --metrics $metrics --out $out --river $river
