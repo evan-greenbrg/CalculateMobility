@@ -1,20 +1,23 @@
 import glob
 import os
+from natsort import natsorted
 
 
-def get_paths(poly, root):
+def get_paths(root):
     # Get the rivers
     fps = glob.glob(os.path.join(root, 'mask', '*.tif'))
-    blocks = {}
-    for fp in fps:
-        block = fp.split('_')[-1].split('.')[0]
-        if not blocks.get(block):
-            blocks[block] = [fp]
-        if blocks.get(block):
-            blocks[block].append(fp)
+    out_paths = {root: fps}
 
-    out_paths = []
-    for block in sorted(blocks.keys()):
-        out_paths.append(blocks[block])
+    return out_paths
+
+
+def get_paths_dswe(root):
+    fp_roots = natsorted(glob.glob(os.path.join(root, 'WaterLevel*')))
+    out_paths = {}
+    for root in fp_roots:
+    # Get the rivers
+        water_level = root.split('/')[-1]
+        fps = glob.glob(os.path.join(root, 'mask', '*.tif'))
+        out_paths[root] = fps
 
     return out_paths

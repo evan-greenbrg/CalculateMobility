@@ -510,11 +510,8 @@ def make_gif(fps, fp_in, fp_out, dswe=False):
             os.rmdir(dire)
 
 
-def make_gifs(river, root):
+def make_gifs(river, root, dswe=False):
     print(river)
-    fps = sorted(
-        glob.glob(os.path.join(root, '*mobility_block_0.csv'))
-    )
     fp_in = os.path.join(
         root, 'mask/*_mask*.tif'
     )
@@ -528,50 +525,32 @@ def make_gifs(river, root):
     mobility_out = os.path.join(
         root, f'{river}_mobility_metrics.csv'
     )
-    print('Finding Stats')
-    stats = get_stats(fps, stat_out)
-    print('Calculating Mobility')
-    get_mobility(stats, mobility_out)
-    print('Making Gif')
-    make_gif(fps, fp_in, fp_out)
-
-
-def make_gifs_dswe(river, root):
-    fp_roots = natsorted(glob.glob(os.path.join(root, 'WaterLevel*')))
-    fp_in = os.path.join(
-        root, 'WaterLevel2', 'mask/*_mask*.tif'
-    )
-    fp_out = os.path.join(
-        root, f'{river}_cumulative.gif'
-    )
-    stat_out = os.path.join(
-        root, f'{river}_pixel_values.csv'
-    )
-    mobility_out = os.path.join(
-        root, f'{river}_mobility_metrics.csv'
-    )
-
-    fps = []
-    for root in fp_roots:
-        level = root.split('/')[-1]
-        fps.append(glob.glob(
-            os.path.join(root, '*mobility_block_0.csv')
-        )[0])
+    if dswe:
+        fps = []
+        for root in fp_roots:
+            print(os.path.join(root, '*yearly_mobility.csv'))
+            level = root.split('/')[-1]
+            fps.append(glob.glob(
+                os.path.join(root, '*yearly_mobility.csv')
+            )[0])
+    else:
+        fps = sorted(
+            glob.glob(os.path.join(root, '*yearly_mobility.csv'))
+        )
 
     print('Finding Stats')
     stats = get_stats(fps, stat_out)
     print('Calculating Mobility')
     get_mobility(stats, mobility_out)
     print('Making Gif')
-    make_gif(fps, fp_in, fp_out, dswe=True)
+    make_gif(fps, fp_in, fp_out, dswe=dswe)
 
 
 if __name__ == '__main__':
-
-    root = '/Volumes/Samsung_T5/Mac/PhD/Projects/Mobility/MethodsPaper/RiverData/MeanderingRivers/Data/Indus'
-
-    river='PearlUpstream'
-    poly="/home/greenberg/ExtraSpace/PhD/Projects/Mobility/Dams/River_Shapes/$river.gpkg"
-    gif="true"
-    out="/home/greenberg/ExtraSpace/PhD/Projects/Mobility/Dams/River_Files"
-    ocale=30
+    pass
+    # root = '/Volumes/Samsung_T5/Mac/PhD/Projects/Mobility/MethodsPaper/RiverData/MeanderingRivers/Data/Indus'
+    # river='PearlUpstream'
+    # poly="/home/greenberg/ExtraSpace/PhD/Projects/Mobility/Dams/River_Shapes/$river.gpkg"
+    # gif="true"
+    # out="/home/greenberg/ExtraSpace/PhD/Projects/Mobility/Dams/River_Files"
+    # ocale=30

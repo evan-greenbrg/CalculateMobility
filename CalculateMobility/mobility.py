@@ -1,16 +1,17 @@
 import os
 import numpy as np
 import pandas
+from natsort import natsorted
 
 from mobility_helpers import clean
 from mobility_helpers import create_mask_shape
 from mobility_helpers import get_scale 
 
 
-def get_mobility_rivers(poly, paths, out, river):
+def get_mobility_rivers(poly, paths, river):
     print(river)
-    for block, path_list in enumerate(paths):
-        path_list = sorted(path_list)
+    for out, path_list in paths.items():
+        path_list = natsorted(path_list)
 
         mask = create_mask_shape(
             poly,
@@ -45,7 +46,7 @@ def get_mobility_rivers(poly, paths, out, river):
 
         out_path = os.path.join(
             out,
-            f'{river}_yearly_mobility_block_{block}.csv'
+            f'{river}_yearly_mobility.csv'
         )
         full_df.to_csv(out_path)
 

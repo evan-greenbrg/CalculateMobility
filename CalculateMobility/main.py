@@ -3,6 +3,7 @@ import platform
 from multiprocessing import set_start_method
 
 from puller import get_paths
+from puller import get_paths_dswe
 from mobility import get_mobility_rivers
 from gif import make_gifs
 
@@ -28,16 +29,17 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     export_images = False
-    paths = get_paths(args.poly, args.out)
+    if args.metrics == 'dswe':
+        paths = get_paths_dswe(args.out)
+    else:
+        paths = get_paths(args.out)
 
     print('Pulling Mobility')
-    rivers = get_mobility_rivers(args.poly, paths, args.out, args.river)
+    rivers = get_mobility_rivers(args.poly, paths, args.river)
 
-    if (args.metrics== 'single'):
-        print('Making Gif')
-        make_gifs(args.river, args.out)
-
+    print('Making Gif')
+    if (args.metrics == 'single'):
+        dswe = False
     elif (args.metrics== 'dswe'):
-        print('Making Gif')
-        make_gifs_dswe(args.river, args.out)
-
+        dswe = True
+    make_gifs(args.river, args.out, dswe=dswe)
