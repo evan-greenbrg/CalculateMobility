@@ -1,8 +1,7 @@
 #!/bin/bash
-river='PearlUpstream'
-poly="/home/greenberg/ExtraSpace/PhD/Projects/Mobility/Dams/River_Shapes/$river.gpkg"
-gif="true"
-out="/home/greenberg/ExtraSpace/PhD/Projects/Mobility/Dams/River_Files"
-scale=30
+river='Indus'
+poly="/Users/greenberg/Documents/PHD/Projects/Mobility/MethodsPaper/RiverData/Meandering/shapes/$river.gpkg"
+metrics="dswe"
+out="/Volumes/Samsung_T5/Mac/PhD/Projects/Mobility/MethodsPaper/RiverData/MeanderingRivers/Data/Indus"
 
-python ../CalculateMobility/main.py --poly $poly --gif $gif --out $out --river $river --scale $scale
+python ../CalculateMobility/main.py --poly $poly --gif $gif --out $out --river $river

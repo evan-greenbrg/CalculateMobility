@@ -4,9 +4,10 @@ import pandas
 
 from mobility_helpers import clean
 from mobility_helpers import create_mask_shape
+from mobility_helpers import get_scale 
 
 
-def get_mobility_rivers(poly, paths, out, river, scale):
+def get_mobility_rivers(poly, paths, out, river):
     print(river)
     for block, path_list in enumerate(paths):
         path_list = sorted(path_list)
@@ -23,10 +24,12 @@ def get_mobility_rivers(poly, paths, out, river, scale):
             path_list
         )
 
+        scale = get_scale(path_list[-1])
+
         river_dfs = get_mobility_yearly(
             images,
             mask,
-            scale
+            scale=scale
         )
 
         full_df = pandas.DataFrame()
@@ -42,7 +45,6 @@ def get_mobility_rivers(poly, paths, out, river, scale):
 
         out_path = os.path.join(
             out,
-            river,
             f'{river}_yearly_mobility_block_{block}.csv'
         )
         full_df.to_csv(out_path)
@@ -122,14 +124,14 @@ def get_mobility_yearly(images, mask, scale=30):
             o_dw = w_b - d_dw
 
             data['i'].append(j)
-            data['O_avg'].append(o_avg * scale)
-            data['O_wd'].append(o_wd * scale)
-            data['O_dw'].append(o_dw * scale)
+            data['O_avg'].append(o_avg * (scale**2))
+            data['O_wd'].append(o_wd * (scale**2))
+            data['O_dw'].append(o_dw * (scale**2))
             data['O_wick'].append(o_wick)
-            data['fR'].append(fR * scale)
+            data['fR'].append(fR * (scale**2))
             data['fR_wick'].append(fR_wick)
-            data['w_b'].append(w_b * scale)
-            data['d_b'].append(Na * scale)
+            data['w_b'].append(w_b * (scale**2))
+            data['d_b'].append(Na * (scale**2))
 
         data['year'] = years
         river_dfs[yrange[0]] = pandas.DataFrame(data=data)

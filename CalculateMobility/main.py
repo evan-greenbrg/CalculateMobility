@@ -15,8 +15,8 @@ if __name__ == '__main__':
     parser.add_argument('--poly', metavar='poly', type=str,
                         help='In path for the geopackage path')
 
-    parser.add_argument('--gif', metavar='gif', type=str,
-                        choices=['true', 'false'],
+    parser.add_argument('--metrics', metavar='metrics', type=str,
+                        choices=['single', 'dswe', 'false'],
                         help='Do you want to make the gif?')
 
     parser.add_argument('--out', metavar='out', type=str,
@@ -25,18 +25,19 @@ if __name__ == '__main__':
     parser.add_argument('--river', metavar='r', type=str,
                         help='River name')
 
-    parser.add_argument('--scale', metavar='s', type=float,
-                        help='Mask resolution')
-
     args = parser.parse_args()
 
     export_images = False
-    paths = get_paths(args.poly, args.out, args.river)
+    paths = get_paths(args.poly, args.out)
 
     print('Pulling Mobility')
-    rivers = get_mobility_rivers(args.poly, paths, args.out, args.river, args.scale)
+    rivers = get_mobility_rivers(args.poly, paths, args.out, args.river)
 
-    if (args.gif == 'true'):
+    if (args.metrics== 'single'):
         print('Making Gif')
         make_gifs(args.river, args.out)
+
+    elif (args.metrics== 'dswe'):
+        print('Making Gif')
+        make_gifs_dswe(args.river, args.out)
 

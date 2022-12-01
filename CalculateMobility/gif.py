@@ -65,14 +65,17 @@ def get_stats(fps, stat_out):
     for df in full_dfs_clean:
         full_df = full_df.append(df)
 
+    # Pick when to stop - this is when there are only 3 images left
+    stop = len(np.unique(full_df['x'])) - 3
+    print(stop)
     # Make avg_df
-    df50 = full_df.groupby('x').quantile(0.5).reset_index(drop=False).iloc[:28]
+    df50 = full_df.groupby('x').quantile(0.5).reset_index(drop=False).iloc[:stop]
     df50 = df50.dropna(how='any')
 
-    df75 = full_df.groupby('x').quantile(0.75).reset_index(drop=False).iloc[:28]
+    df75 = full_df.groupby('x').quantile(0.75).reset_index(drop=False).iloc[:stop]
     df75 = df75.dropna(how='any')
 
-    df25 = full_df.groupby('x').quantile(0.25).reset_index(drop=False).iloc[:28]
+    df25 = full_df.groupby('x').quantile(0.25).reset_index(drop=False).iloc[:stop]
     df25 = df25.dropna(how='any')
 
     # OAvg
@@ -81,7 +84,7 @@ def get_stats(fps, stat_out):
         df25['x'],
         df25['O_avg'].to_numpy(),
         m_wrapper(aw25),
-        [.01, 1]
+        [.01, 100]
     )
 
     aw50 = df50['w_b'].mean()
@@ -89,7 +92,7 @@ def get_stats(fps, stat_out):
         df50['x'],
         df50['O_avg'].to_numpy(),
         m_wrapper(aw50),
-        [.01, 1]
+        [.01, 100]
     )
 
     aw75 = df75['w_b'].mean()
@@ -97,7 +100,7 @@ def get_stats(fps, stat_out):
         df75['x'],
         df75['O_avg'].to_numpy(),
         m_wrapper(aw75),
-        [.01, 1]
+        [.01, 100]
     )
 
     # Owet-dry
@@ -105,21 +108,21 @@ def get_stats(fps, stat_out):
         df25['x'],
         df25['O_wd'].to_numpy(),
         m_wrapper(aw25),
-        [.01, 1]
+        [.01, 100]
     )
 
     m50wd, pm50wd, m50wd_r2 = fit_curve(
         df50['x'],
         df50['O_wd'].to_numpy(),
         m_wrapper(aw50),
-        [.01, 1]
+        [.01, 100]
     )
 
     m75wd, pm75wd, m75wd_r2 = fit_curve(
         df75['x'],
         df75['O_wd'].to_numpy(),
         m_wrapper(aw75),
-        [.01, 1]
+        [.01, 100]
     )
 
     # Odry-wed
@@ -127,40 +130,40 @@ def get_stats(fps, stat_out):
         df25['x'],
         df25['O_dw'].to_numpy(),
         m_wrapper(aw25),
-        [.01, 1]
+        [.01, 100]
     )
 
     m50dw, pm50dw, m50dw_r2 = fit_curve(
         df50['x'],
         df50['O_dw'].to_numpy(),
         m_wrapper(aw50),
-        [.01, 1]
+        [.01, 100]
     )
 
     m75dw, pm75dw, m75dw_r2 = fit_curve(
         df75['x'],
         df75['O_dw'].to_numpy(),
         m_wrapper(aw75),
-        [.01, 1]
+        [.01, 100]
     )
 
     r25, pr25, r25_r2 = fit_curve(
         df25['x'],
         df25['fR'].to_numpy(),
         func_r_param,
-        [.001, 1]
+        [.001, 100]
     )
     r50, pr50, r50_r2 = fit_curve(
         df50['x'],
         df50['fR'].to_numpy(),
         func_r_param,
-        [.001, 1]
+        [.001, 100]
     )
     r75, pr75, r75_r2 = fit_curve(
         df75['x'],
         df75['fR'].to_numpy(),
         func_r_param,
-        [.001, 1]
+        [.001, 100]
     )
 
     stats = pandas.DataFrame(data={
@@ -269,13 +272,22 @@ def get_mobility(stats, mobility_out):
     mobility.to_csv(mobility_out)
 
 
-def make_gif(fps, fp_in, fp_out):
+def make_gif(fps, fp_in, fp_out, dswe=False):
     """
     HAVE TO FIX SOME OF THE REFERENCES TO THE OLD DF
     """
 
     # Handle mobility dataframes
-    full_dfs = [pandas.read_csv(fp) for fp in fps]
+    if dswe:
+        full_dfs = []
+        for fp in fps:
+            level = fp.split('/')[-2]
+            df = pandas.read_csv(fp)
+            df['DSWE_level'] = level
+            full_dfs.append(df)
+    else:
+        full_dfs = [pandas.read_csv(fp) for fp in fps]
+
     full_dfs_clean = []
     for full_df in full_dfs:
         full_df_clean = pandas.DataFrame()
@@ -349,7 +361,6 @@ def make_gif(fps, fp_in, fp_out):
             data = df50.iloc[i]
 
         img_buf = io.BytesIO()
-
         fig = plt.figure(constrained_layout=True, figsize=(10, 7))
         gs = fig.add_gridspec(2, 2)
         ax1 = fig.add_subplot(gs[:, 0])
@@ -396,14 +407,25 @@ def make_gif(fps, fp_in, fp_out):
             facecolor='#FFCCCB',
             edgecolor='black'
         )
-        ax2.scatter(
-            full_df['x'],
-            full_df['fR'],
-            zorder=2,
-            s=30,
-            facecolor='black',
-            edgecolor='black'
-        )
+
+        if dswe:
+            for name, group in full_df.groupby('DSWE_level'):
+                ax2.scatter(
+                    group['x'],
+                    group['fR'],
+                    zorder=2,
+                    s=30,
+                )
+        else:
+            ax2.scatter(
+                full_df['x'],
+                full_df['fR'],
+                zorder=2,
+                s=30,
+                facecolor='black',
+                edgecolor='black'
+            )
+
         if i < len(df50):
             ax2.scatter(
                 data['x'],
@@ -442,14 +464,23 @@ def make_gif(fps, fp_in, fp_out):
             facecolor='#FFCCCB',
             edgecolor='black'
         )
-        ax3.scatter(
-            full_df['x'],
-            full_df['O_avg'],
-            zorder=2,
-            s=30,
-            facecolor='black',
-            edgecolor='black'
-        )
+        if dswe:
+            for name, group in full_df.groupby('DSWE_level'):
+                ax3.scatter(
+                    group['x'],
+                    group['O_avg'],
+                    zorder=2,
+                    s=30,
+                )
+        else:
+            ax3.scatter(
+                full_df['x'],
+                full_df['O_avg'],
+                zorder=2,
+                s=30,
+                facecolor='black',
+                edgecolor='black'
+            )
         ax3.scatter(
             data['x'], 
             data['O_avg'], 
@@ -482,20 +513,20 @@ def make_gif(fps, fp_in, fp_out):
 def make_gifs(river, root):
     print(river)
     fps = sorted(
-        glob.glob(os.path.join(root, f'{river}/*mobility_block_0.csv'))
+        glob.glob(os.path.join(root, '*mobility_block_0.csv'))
     )
     fp_in = os.path.join(
-        root, f'{river}/mask/*_mask*.tif'
+        root, 'mask/*_mask*.tif'
     )
 
     fp_out = os.path.join(
-        root, f'{river}/{river}_cumulative.gif'
+        root, f'{river}_cumulative.gif'
     )
     stat_out = os.path.join(
-        root, f'{river}/{river}_pixel_values.csv'
+        root, f'{river}_pixel_values.csv'
     )
     mobility_out = os.path.join(
-        root, f'{river}/{river}_mobility_metrics.csv'
+        root, f'{river}_mobility_metrics.csv'
     )
     print('Finding Stats')
     stats = get_stats(fps, stat_out)
@@ -505,7 +536,39 @@ def make_gifs(river, root):
     make_gif(fps, fp_in, fp_out)
 
 
+def make_gifs_dswe(river, root):
+    fp_roots = natsorted(glob.glob(os.path.join(root, 'WaterLevel*')))
+    fp_in = os.path.join(
+        root, 'WaterLevel2', 'mask/*_mask*.tif'
+    )
+    fp_out = os.path.join(
+        root, f'{river}_cumulative.gif'
+    )
+    stat_out = os.path.join(
+        root, f'{river}_pixel_values.csv'
+    )
+    mobility_out = os.path.join(
+        root, f'{river}_mobility_metrics.csv'
+    )
+
+    fps = []
+    for root in fp_roots:
+        level = root.split('/')[-1]
+        fps.append(glob.glob(
+            os.path.join(root, '*mobility_block_0.csv')
+        )[0])
+
+    print('Finding Stats')
+    stats = get_stats(fps, stat_out)
+    print('Calculating Mobility')
+    get_mobility(stats, mobility_out)
+    print('Making Gif')
+    make_gif(fps, fp_in, fp_out, dswe=True)
+
+
 if __name__ == '__main__':
+
+    root = '/Volumes/Samsung_T5/Mac/PhD/Projects/Mobility/MethodsPaper/RiverData/MeanderingRivers/Data/Indus'
 
     river='PearlUpstream'
     poly="/home/greenberg/ExtraSpace/PhD/Projects/Mobility/Dams/River_Shapes/$river.gpkg"
