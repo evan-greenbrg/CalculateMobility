@@ -67,7 +67,6 @@ def get_stats(fps, stat_out):
 
     # Pick when to stop - this is when there are only 3 images left
     stop = len(np.unique(full_df['x'])) - 3
-    print(stop)
     # Make avg_df
     df50 = full_df.groupby('x').quantile(0.5).reset_index(drop=False).iloc[:stop]
     df50 = df50.dropna(how='any')
@@ -167,34 +166,20 @@ def get_stats(fps, stat_out):
     )
 
     stats = pandas.DataFrame(data={
-        'Type': ['Value', 'Rsquared'],
-        'Aw25': [round(aw25, 8), None],
-        'Aw50': [round(aw50, 8), None],
-        'Aw75': [round(aw75, 8), None],
-        'CM25': [round(m25, 8), round(m25_r2, 8)],
-        'PM25': [round(pm25, 8), None],
-        'CM50': [round(m50, 8), round(m50_r2, 8)],
-        'PM50': [round(pm50, 8), None],
-        'CM75': [round(m75, 8), round(m75_r2, 8)],
-        'PM75': [round(pm75, 8), None],
-        'CM25wd': [round(m25wd, 8), round(m25wd_r2, 8)],
-        'PM25wd': [round(pm25wd, 8), None],
-        'CM50wd': [round(m50wd, 8), round(m50wd_r2, 8)],
-        'PM50wd': [round(pm50wd, 8), None],
-        'CM75wd': [round(m75wd, 8), round(m75wd_r2, 8)],
-        'PM75wd': [round(pm75wd, 8), None],
-        'CM25dw': [round(m25dw, 8), round(m25dw_r2, 8)],
-        'PM25dw': [round(pm25dw, 8), None],
-        'CM50dw': [round(m50dw, 8), round(m50dw_r2, 8)],
-        'PM50dw': [round(pm50dw, 8), None],
-        'CM75dw': [round(m75dw, 8), round(m75dw_r2, 8)],
-        'PM75dw': [round(pm75dw, 8), None],
-        'CR25': [round(r25, 8), round(r25_r2, 8)],
-        'PR25': [round(pr25, 8), None],
-        'CR50': [round(r50, 8), round(r50_r2, 8)],
-        'PR50': [round(pr50, 8), None],
-        'CR75': [round(r75, 8), round(r75_r2, 8)],
-        'PR75': [round(pr75, 8), None],
+        'Quantile': [25, 50, 75],
+        'Aw': [aw25, aw50, aw75],
+        'CM': [m25, m50, m75],
+        'PM': [pm25, pm50, pm75],
+        'M_r2': [m25_r2, m50_r2, m75_r2],
+        'CMwd': [m25wd, m50wd, m75wd],
+        'PMwd': [pm25wd, pm50wd, pm75wd],
+        'Mwd_r2': [m25wd_r2, m50wd_r2, m75wd_r2],
+        'CMdw': [m25dw, m50dw, m75dw],
+        'PMdw': [pm25dw, pm50dw, pm75dw],
+        'Mdw_r2': [m25dw_r2, m50dw_r2, m75dw_r2],
+        'CR': [r25, r50, r75],
+        'PR': [pr25, pr50, pr75],
+        'R_r2': [r25_r2, r50_r2, r75_r2],
     })
     stats.to_csv(stat_out)
 
@@ -205,69 +190,30 @@ def get_mobility(stats, mobility_out):
     """
     HAVE THIS SPIT OUT REAL DATA
     """
-    stats = stats.iloc[0]
+    quantile = [25, 50, 75]
+    M = (stats['CM'] * (1 - (stats['PM'] / stats['Aw']))).values
+    T_M = 3 / M
 
-    M25 = stats['CM25'] * (1 - (stats['PM25'] / stats['Aw25']))
-    T_M25 = 3 / M25
+    Mwd = (stats['CMwd'] * (1 - (stats['PMwd'] / stats['Aw']))).values
+    T_Mwd = 3 / Mwd
 
-    M50 = stats['CM50'] * (1 - (stats['PM50'] / stats['Aw50']))
-    T_M50 = 3 / M50
+    Mdw = (stats['CMdw'] * (1 - (stats['PMdw'] / stats['Aw']))).values
+    T_Mdw = 3 / Mdw
 
-    M75 = stats['CM75'] * (1 - (stats['PM75'] / stats['Aw75']))
-    T_M75 = 3 / M75
-
-    M25wd = stats['CM25wd'] * (1 - (stats['PM25wd'] / stats['Aw25']))
-    T_M25wd = 3 / M25wd
-
-    M50wd = stats['CM50wd'] * (1 - (stats['PM50wd'] / stats['Aw50']))
-    T_M50wd = 3 / M50wd
-
-    M75wd = stats['CM75wd'] * (1 - (stats['PM75wd'] / stats['Aw75']))
-    T_M75wd = 3 / M75wd
-
-    M25dw = stats['CM25dw'] * (1 - (stats['PM25dw'] / stats['Aw25']))
-    T_M25dw = 3 / M25dw
-
-    M50dw = stats['CM50dw'] * (1 - (stats['PM50dw'] / stats['Aw50']))
-    T_M50dw = 3 / M50dw
-
-    M75dw = stats['CM75dw'] * (1 - (stats['PM75dw'] / stats['Aw75']))
-    T_M75dw = 3 / M75dw
-
-    R25 = stats['CR25'] * ((stats['PR25'] / stats['Aw25']))
-    T_R25 = 3 / R25
-
-    R50 = stats['CR50'] * ((stats['PR50'] / stats['Aw50']))
-    T_R50 = 3 / R50
-
-    R75 = stats['CR75'] * ((stats['PR75'] / stats['Aw75']))
-    T_R75 = 3 / R75
+    R = (stats['CR'] * (stats['PR'] / stats['Aw'])).values
+    T_R = 3 / R
 
     mobility = pandas.DataFrame(data={
-        'M25': [M25],
-        'T_M25': [T_M25],
-        'M50': [M50],
-        'T_M50': [T_M50],
-        'M75': [M75],
-        'T_M75': [T_M75],
-        'M25wd': [M25wd],
-        'T_M25wd': [T_M25wd],
-        'M50wd': [M50wd],
-        'T_M50wd': [T_M50wd],
-        'M75wd': [M75wd],
-        'T_M75wd': [T_M75wd],
-        'M25dw': [M25dw],
-        'T_M25dw': [T_M25dw],
-        'M50dw': [M50dw],
-        'T_M50dw': [T_M50dw],
-        'M75dw': [M75dw],
-        'T_M75dw': [T_M75dw],
-        'R25': [R25],
-        'T_R25': [T_R25],
-        'R50': [R50],
-        'T_R50': [T_R50],
-        'R75': [R75],
-        'T_R75': [T_R75],
+        'Quantile': quantile,
+        'M': M,
+        'T_M': T_M,
+        'Mwd': Mwd,
+        'T_Mwd': T_Mwd,
+        'Mdw': Mdw,
+        'T_Mdw': T_Mdw,
+        'R': R,
+        'T_R': T_R,
+        'Aw': stats['Aw'].values
     })
     mobility.to_csv(mobility_out)
 
@@ -302,14 +248,13 @@ def make_gif(fps, fp_in, fp_out, dswe=False):
         full_df = full_df.append(df)
 
     # Make avg_df
-    df50 = full_df.groupby('x').quantile(0.5).reset_index(drop=False).iloc[:]
-    df50 = df50.dropna(how='any')
-
-    df75 = full_df.groupby('x').quantile(0.75).reset_index(drop=False).iloc[:]
-    df75 = df75.dropna(how='any')
-
-    df25 = full_df.groupby('x').quantile(0.25).reset_index(drop=False).iloc[:]
-    df25 = df25.dropna(how='any')
+    if dswe:
+        avgs = {}
+        for name, group in full_df.groupby('DSWE_level'):
+            avgs[name] = group.groupby('x').quantile(0.5).reset_index(drop=False).iloc[:]
+    else:
+        df50 = full_df.groupby('x').quantile(0.5).reset_index(drop=False).iloc[:]
+        df50 = df50.dropna(how='any')
 
     # Handle images
     imgs = [f for f in natsorted(glob.glob(fp_in))]
@@ -357,8 +302,6 @@ def make_gif(fps, fp_in, fp_out, dswe=False):
     ]
     for i, ag in enumerate(agrs):
         year = list(years.keys())[i]
-        if i < len(df50):
-            data = df50.iloc[i]
 
         img_buf = io.BytesIO()
         fig = plt.figure(constrained_layout=True, figsize=(10, 7))
@@ -382,33 +325,23 @@ def make_gif(fps, fp_in, fp_out, dswe=False):
             loc='lower left',
             prop={'size': 10}
         )
-
-        ax2.scatter(
-            df25['x'],
-            df25['fR'],
-            zorder=4,
-            s=50,
-            facecolor='#FFCCCB',
-            edgecolor='black'
-        )
-        ax2.scatter(
-            df50['x'],
-            df50['fR'],
-            zorder=4,
-            s=70,
-            facecolor='#8B0000',
-            edgecolor='black'
-        )
-        ax2.scatter(
-            df75['x'],
-            df75['fR'],
-            zorder=4,
-            s=50,
-            facecolor='#FFCCCB',
-            edgecolor='black'
-        )
-
         if dswe:
+            for level, df50 in avgs.items():
+                ax2.scatter(
+                    df50['x'],
+                    df50['fR'],
+                    zorder=4,
+                    s=70,
+                    facecolor='#8B0000',
+                    edgecolor='black'
+                )
+                ax2.scatter(
+                    df50.iloc[i]['x'],
+                    df50.iloc[i]['fR'],
+                    s=200,
+                    zorder=3,
+                    color='red'
+                )
             for name, group in full_df.groupby('DSWE_level'):
                 ax2.scatter(
                     group['x'],
@@ -418,6 +351,21 @@ def make_gif(fps, fp_in, fp_out, dswe=False):
                 )
         else:
             ax2.scatter(
+                df50['x'],
+                df50['fR'],
+                zorder=4,
+                s=70,
+                facecolor='#8B0000',
+                edgecolor='black'
+            )
+            ax2.scatter(
+                df50.iloc[i]['x'],
+                df50.iloc[i]['fR'],
+                s=200,
+                zorder=3,
+                color='red'
+            )
+            ax2.scatter(
                 full_df['x'],
                 full_df['fR'],
                 zorder=2,
@@ -426,45 +374,29 @@ def make_gif(fps, fp_in, fp_out, dswe=False):
                 edgecolor='black'
             )
 
-        if i < len(df50):
-            ax2.scatter(
-                data['x'],
-                data['fR'],
-                s=200,
-                zorder=3,
-                color='red'
-            )
         ax2.set_ylabel('Remaining Rework Fraction')
         ax2.legend(
             loc='upper left',
             frameon=True
         )
 
-        ax3.scatter(
-            df25['x'],
-            df25['O_avg'],
-            zorder=4,
-            s=50,
-            facecolor='#FFCCCB',
-            edgecolor='black'
-        )
-        ax3.scatter(
-            df50['x'],
-            df50['O_avg'],
-            zorder=4,
-            s=70,
-            facecolor='#8B0000',
-            edgecolor='black'
-        )
-        ax3.scatter(
-            df75['x'],
-            df75['O_avg'],
-            zorder=4,
-            s=50,
-            facecolor='#FFCCCB',
-            edgecolor='black'
-        )
         if dswe:
+            for level, df50 in avgs.items():
+                ax3.scatter(
+                    df50['x'],
+                    df50['O_avg'],
+                    zorder=4,
+                    s=70,
+                    facecolor='#8B0000',
+                    edgecolor='black'
+                )
+                ax3.scatter(
+                    df50.iloc[i]['x'],
+                    df50.iloc[i]['O_avg'],
+                    s=200,
+                    zorder=3,
+                    color='red'
+                )
             for name, group in full_df.groupby('DSWE_level'):
                 ax3.scatter(
                     group['x'],
@@ -474,6 +406,21 @@ def make_gif(fps, fp_in, fp_out, dswe=False):
                 )
         else:
             ax3.scatter(
+                df50['x'],
+                df50['O_avg'],
+                zorder=4,
+                s=70,
+                facecolor='#8B0000',
+                edgecolor='black'
+            )
+            ax3.scatter(
+                df50.iloc[i]['x'],
+                df50.iloc[i]['O_avg'],
+                s=200,
+                zorder=3,
+                color='red'
+            )
+            ax3.scatter(
                 full_df['x'],
                 full_df['O_avg'],
                 zorder=2,
@@ -481,13 +428,8 @@ def make_gif(fps, fp_in, fp_out, dswe=False):
                 facecolor='black',
                 edgecolor='black'
             )
-        ax3.scatter(
-            data['x'], 
-            data['O_avg'], 
-            s=200, zorder=3, color='red'
-        )
-        ax3.set_ylabel('Normalized Channel Overlap')
 
+        ax3.set_ylabel('Normalized Channel Overlap')
         plt.savefig(img_buf, format='png')
         images.append(Image.open(img_buf))
         plt.close('all')
@@ -510,7 +452,35 @@ def make_gif(fps, fp_in, fp_out, dswe=False):
             os.rmdir(dire)
 
 
-def make_gifs(river, root, dswe=False):
+def filter_dswe_stats(stats, r2_thresh):
+    stats.at[
+        np.where(stats['M_r2'] < r2_thresh)[0], 
+        ['CM', 'PM']
+    ] = None
+    stats.at[
+        np.where(stats['Mwd_r2'] < r2_thresh)[0], 
+        ['CMwd', 'PMwd']
+    ] = None
+    stats.at[
+        np.where(stats['Mdw_r2'] < r2_thresh)[0], 
+        ['CMdw', 'PMdw']
+    ] = None
+    stats.at[
+        np.where(stats['R_r2'] < r2_thresh)[0], 
+        ['R', 'PR']
+    ] = None
+    stats.at[
+        np.where(
+            (stats['M_r2'] < r2_thresh)
+            & (stats['R_r2'] < r2_thresh)
+        )[0],
+        ['Aw']
+    ] = None
+    
+    return stats.groupby('Quantile').median()
+
+
+def make_gifs(river, root, dswe=False, r2_thresh=.76):
     print(river)
 
     fp_out = os.path.join(
@@ -522,17 +492,35 @@ def make_gifs(river, root, dswe=False):
     mobility_out = os.path.join(
         root, f'{river}_mobility_metrics.csv'
     )
+    print('Finding Stats')
     if dswe:
         fp_in = os.path.join(
             root, 'WaterLevel2/mask/*_mask*.tif'
         )
-        fps = []
+        # Iterate through all the water levels in the folder
         fp_roots = glob.glob(os.path.join(root, 'WaterLevel*'))
+        stats = pandas.DataFrame()
+        fps = []
         for root in fp_roots:
             level = root.split('/')[-1]
-            fps.append(glob.glob(
-                os.path.join(root, '*yearly_mobility.csv')
-            )[0])
+            print(level)
+            water_stat_out = os.path.join(root, f'{river}_pixel_values.csv')
+            water_fps = glob.glob(
+                os.path.join(root, '*yearly_mobility*.csv')
+            )
+            # Get individual water level stats and save those csv
+            level_stats = get_stats(water_fps, water_stat_out)
+            level_stats ['WaterLevel'] = level
+
+            # Concatenate all the water level stats and save
+            stats = stats.append(level_stats)
+            fps.append(water_fps[0])
+        stats = stats.reset_index(drop=True)
+        stats.to_csv(stat_out)
+
+        # Reduce the stats df according to the given r2 threhold
+        stats = filter_dswe_stats(stats, r2_thresh=r2_thresh)
+
     else:
         fps = sorted(
             glob.glob(os.path.join(root, '*yearly_mobility.csv'))
@@ -540,20 +528,11 @@ def make_gifs(river, root, dswe=False):
         fp_in = os.path.join(
             root, 'mask/*_mask*.tif'
         )
+        stats = get_stats(fps, stat_out)
 
-    print('Finding Stats')
-    stats = get_stats(fps, stat_out)
     print('Calculating Mobility')
     get_mobility(stats, mobility_out)
     print('Making Gif')
     make_gif(fps, fp_in, fp_out, dswe=dswe)
 
 
-if __name__ == '__main__':
-    pass
-    # root = '/Volumes/Samsung_T5/Mac/PhD/Projects/Mobility/MethodsPaper/RiverData/MeanderingRivers/Data/Indus'
-    # river='PearlUpstream'
-    # poly="/home/greenberg/ExtraSpace/PhD/Projects/Mobility/Dams/River_Shapes/$river.gpkg"
-    # gif="true"
-    # out="/home/greenberg/ExtraSpace/PhD/Projects/Mobility/Dams/River_Files"
-    # ocale=30
