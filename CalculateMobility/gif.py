@@ -251,9 +251,9 @@ def make_gif(fps, fp_in, fp_out, dswe=False):
     if dswe:
         avgs = {}
         for name, group in full_df.groupby('DSWE_level'):
-            avgs[name] = group.groupby('x').quantile(0.5).reset_index(drop=False).iloc[:]
+            avgs[name] = group.groupby('x').quantile(.5).reset_index(drop=False).iloc[:]
     else:
-        df50 = full_df.groupby('x').quantile(0.5).reset_index(drop=False).iloc[:]
+        df50 = full_df.groupby('x').quantile(.5).reset_index(drop=False).iloc[:]
         df50 = df50.dropna(how='any')
 
     # Handle images
@@ -467,7 +467,7 @@ def filter_dswe_stats(stats, r2_thresh):
     ] = None
     stats.at[
         np.where(stats['R_r2'] < r2_thresh)[0], 
-        ['R', 'PR']
+        ['CR', 'PR']
     ] = None
     stats.at[
         np.where(
@@ -477,7 +477,7 @@ def filter_dswe_stats(stats, r2_thresh):
         ['Aw']
     ] = None
     
-    return stats.groupby('Quantile').median()
+    return stats.groupby('Quantile').mean()
 
 
 def make_gifs(river, root, dswe=False, r2_thresh=.76):
