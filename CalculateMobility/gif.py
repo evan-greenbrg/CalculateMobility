@@ -15,16 +15,20 @@ from scipy.optimize import curve_fit
 def func_3_param(x, a, m, p):
     return ((a - p) * np.exp(-m * x)) + p
 
+
 def func_r_param(x, r, p):
     return (-p * np.exp(-r * x)) + p
 
+
 def func_m_param(x, m, p, aw):
     return ((aw - p) * np.exp(-m * x)) + p
+
 
 def m_wrapper(aw):
     def tempfunc(x, m, p, aw=aw):
         return func_m_param(x, m, p, aw)
     return tempfunc
+
 
 def func_2_param(x, m, p):
     return (p * np.exp(-m * x)) + p
@@ -33,7 +37,7 @@ def func_2_param(x, m, p):
 def fit_curve(x, y, fun, p0):
     # Fitting
     popt, pcov = curve_fit(
-        fun, x, y, 
+        fun, x, y,
         p0=p0, maxfev=1000000
     )
     # R-squared
@@ -454,19 +458,19 @@ def make_gif(fps, fp_in, fp_out, dswe=False):
 
 def filter_dswe_stats(stats, r2_thresh):
     stats.at[
-        np.where(stats['M_r2'] < r2_thresh)[0], 
+        np.where(stats['M_r2'] < r2_thresh)[0],
         ['CM', 'PM']
     ] = None
     stats.at[
-        np.where(stats['Mwd_r2'] < r2_thresh)[0], 
+        np.where(stats['Mwd_r2'] < r2_thresh)[0],
         ['CMwd', 'PMwd']
     ] = None
     stats.at[
-        np.where(stats['Mdw_r2'] < r2_thresh)[0], 
+        np.where(stats['Mdw_r2'] < r2_thresh)[0],
         ['CMdw', 'PMdw']
     ] = None
     stats.at[
-        np.where(stats['R_r2'] < r2_thresh)[0], 
+        np.where(stats['R_r2'] < r2_thresh)[0],
         ['CR', 'PR']
     ] = None
     stats.at[
@@ -476,7 +480,7 @@ def filter_dswe_stats(stats, r2_thresh):
         )[0],
         ['Aw']
     ] = None
-    
+
     return stats.groupby('Quantile').mean()
 
 
@@ -510,7 +514,7 @@ def make_gifs(river, root, dswe=False, r2_thresh=.76):
             )
             # Get individual water level stats and save those csv
             level_stats = get_stats(water_fps, water_stat_out)
-            level_stats ['WaterLevel'] = level
+            level_stats['WaterLevel'] = level
 
             # Concatenate all the water level stats and save
             stats = stats.append(level_stats)
@@ -534,5 +538,3 @@ def make_gifs(river, root, dswe=False, r2_thresh=.76):
     get_mobility(stats, mobility_out)
     print('Making Gif')
     make_gif(fps, fp_in, fp_out, dswe=dswe)
-
-

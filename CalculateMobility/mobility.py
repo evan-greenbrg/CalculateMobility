@@ -5,7 +5,7 @@ from natsort import natsorted
 
 from mobility_helpers import clean
 from mobility_helpers import create_mask_shape
-from mobility_helpers import get_scale 
+from mobility_helpers import get_scale
 
 
 def get_mobility_rivers(poly, paths, river):

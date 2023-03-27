@@ -78,20 +78,20 @@ def find_epsg(lat, long):
 
     # Svalbard
     if (lat >= 72.0) and (lat <= 84.0):
-        if (long >= 0.0)  and (long<  9.0):
+        if (long >= 0.0) and (long < 9.0):
             utm_number = 31
-        if (long >= 9.0)  and (long < 21.0):
+        if (long >= 9.0) and (long < 21.0):
             utm_number = 33
         if (long >= 21.0) and (long < 33.0):
             utm_number = 35
         if (long >= 33.0) and (long < 42.0):
             utm_number = 37
-    
+
     # Special zones for Norway
     elif (lat >= 56.0) and (lat < 64.0):
-        if (long >= 0.0)  and (long <  3.0):
+        if (long >= 0.0) and (long < 3.0):
             utm_number = 31
-        if (long >= 3.0)  and (long < 12.0):
+        if (long >= 3.0) and (long < 12.0):
             utm_number = 32
 
     if (lat > -80.0) and (lat <= 84.0):
@@ -102,19 +102,16 @@ def find_epsg(lat, long):
     else:
         utm_letter = True
 
-    utm_zone = str(utm_number) + str(utm_letter)
-    
     crs = CRS.from_dict({
         'proj': 'utm',
         'zone': utm_number,
         'south': utm_letter
     })
 
-    return crs 
+    return crs
 
 
 def get_scale(fp):
-    # fp = '/Users/greenberg/Documents/PHD/Projects/Mobility/MethodsPaper/RiverData/Meandering/files/Beni/mask/Beni_2021_01-01_12-31_mask.tif'
     ds = rasterio.open(fp)
     lon, lat = ds.xy(0, 0)
     print(lat, lon)
@@ -133,6 +130,6 @@ def get_scale(fp):
     # This is such a crap check
     elif str(ds.crs.to_epsg())[0] == '3':
         return ds.transform[0]
-    
+
     else:
         raise ValueError('Unrecognized EPSG')
