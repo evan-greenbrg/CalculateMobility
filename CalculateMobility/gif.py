@@ -49,7 +49,7 @@ def fit_curve(x, y, fun, p0):
     return (*popt), r_squared
 
 
-def get_stats(fps, stat_out):
+def get_stats(fps, stat_out, stop):
     # Handle mobility dataframes
     if not fps:
         print(f'Number of files found: {len(fps)}')
@@ -70,7 +70,9 @@ def get_stats(fps, stat_out):
         full_df = full_df.append(df)
 
     # Pick when to stop - this is when there are only 3 images left
-    stop = len(np.unique(full_df['x'])) - 3
+    if stop > len(np.unique(full_df['x'])):
+        stop = len(np.unique(full_df['x']))
+
     # Make avg_df
     df50 = full_df.groupby('x').quantile(0.5).reset_index(drop=False).iloc[:stop]
     df50 = df50.dropna(how='any')
@@ -484,7 +486,7 @@ def filter_dswe_stats(stats, r2_thresh):
     return stats.groupby('Quantile').mean()
 
 
-def make_gifs(river, root, dswe=False, r2_thresh=.76):
+def make_gifs(river, root, stop=35, dswe=False, r2_thresh=.76):
     print(river)
 
     fp_out = os.path.join(
@@ -513,7 +515,7 @@ def make_gifs(river, root, dswe=False, r2_thresh=.76):
                 os.path.join(root, '*yearly_mobility*.csv')
             )
             # Get individual water level stats and save those csv
-            level_stats = get_stats(water_fps, water_stat_out)
+            level_stats = get_stats(water_fps, water_stat_out, stop)
             level_stats['WaterLevel'] = level
 
             # Concatenate all the water level stats and save
@@ -532,7 +534,7 @@ def make_gifs(river, root, dswe=False, r2_thresh=.76):
         fp_in = os.path.join(
             root, 'mask/*_mask*.tif'
         )
-        stats = get_stats(fps, stat_out)
+        stats = get_stats(fps, stat_out, stop)
 
     print('Calculating Mobility')
     get_mobility(stats, mobility_out)

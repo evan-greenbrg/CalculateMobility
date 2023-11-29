@@ -20,6 +20,9 @@ if __name__ == '__main__':
                         choices=['single', 'dswe', 'false'],
                         help='Do you want to make the gif?')
 
+    parser.add_argument('--stop', metavar='stop', type=int,
+                        help='How many years do you want to include in fit?')
+
     parser.add_argument('--out', metavar='out', type=str,
                         help='output root directory')
 
@@ -45,4 +48,4 @@ if __name__ == '__main__':
     elif (args.metrics == 'dswe'):
         dswe = True
 
-    make_gifs(args.river, args.out, dswe=dswe)
+    make_gifs(args.river, args.out, stop=args.stop, dswe=dswe)

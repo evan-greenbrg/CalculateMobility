@@ -135,6 +135,7 @@ def get_mobility_yearly(images, mask, scale=30):
             data['d_b'].append(Na * (scale**2))
 
         data['year'] = years
+        data['i'] = np.array(years).astype(int) - int(years[0])
         river_dfs[yrange[0]] = pandas.DataFrame(data=data)
 
     return river_dfs
